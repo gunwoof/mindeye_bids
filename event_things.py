@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+from tqdm import tqdm
+import subprocess
 
 def process_events_files(bids_dir, subjects):
     for subject in subjects:  # 특정 subject 디렉토리만 처리
@@ -16,26 +18,23 @@ def process_events_files(bids_dir, subjects):
                     print(f"Processing file: {file_path}")
                     
                     # Read the TSV file
-                    df = pd.read_csv(file_path, sep='\t')
+                    df = pd.read_csv(file_path, sep="\t")
 
-                    # 73k_id -> image로 이름 바꾸기기
-                    if '73k_id' in df.columns:
-                        df.rename(columns={'73k_id': 'image'}, inplace=True)
-                        df['image'] = df['image'].apply(lambda x: f"coco_{x}" if pd.notnull(x) else x)
+                    # Rename file_path to image and modify values
+                    if 'file_path' in df.columns:
+                        df.rename(columns={'file_path': 'image'}, inplace=True)
+                        df['image'] = df['image'].apply(lambda x: f"things_{x}" if pd.notnull(x) else x)
 
-                    # coco_로 image 이름 수정
-                    df['image'] = df['image'].apply(lambda x: x.replace('coco_coco_', 'coco_') if isinstance(x, str) else x)
-                    
-                    # column 삭제
-                    columns_order = ['onset', 'duration', 'trial_number', 'image', 'response_time']
+                    # Keep only specified columns in correct order
+                    columns_order = ['onset', 'duration', 'image']
                     df = df[[col for col in columns_order if col in df.columns]]
 
                     # Save the modified file back
-                    df.to_csv(file_path, sep='\t', index=False)
+                    df.to_csv(file_path, sep="\t", index=False)
                     print(f"Updated file saved: {file_path}")
 
 # Define the BIDS directory and subjects to process
 bids_directory_path = "/nas-tmp/research/03-Neural_decoding/3-bids"
-subjects_to_process = [f"sub-0{i}" for i in range(1, 9)]  # ['sub-01', 'sub-02', ..., 'sub-08']
+subjects_to_process = [f"sub-0{i}" if i < 10 else f"sub-{i}" for i in range(18, 21)]
 
 process_events_files(bids_directory_path, subjects_to_process)
